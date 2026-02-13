@@ -1,0 +1,23 @@
+{
+    "colors": {
+        "background": "#000511",
+        "card": {
+            "backgroundStart": "#18293B",
+            "backgroundEnd": "#1C1C1E",
+            "shadow": "0 4px 10px rgba(0, 0, 0, 0.2)"
+        },
+        "text": {
+            "primary": "#ffffff",
+            "secondary": "#8a8d9f"
+        },
+        "accent": "#008AFF",
+        "line": "#7C7C7C",
+        "border": "#ffffff54",
+        "headerBackground": "rgba(24, 41, 59, 0.5)",
+        "winnerBackground": "linear-gradient(90deg, rgba(0, 136, 255, 0.27) 0%, transparent 100%)"
+    },
+    "layout": {
+        "matchWidth": "260px",
+        "roundGap": "80px"
+    }
+}
