@@ -31,7 +31,7 @@ export const Match: React.FC<MatchProps> = memo(({ match, matchIndex, isLastRoun
                   {team1.logo ? (
                     <img src={team1.logo} alt={team1.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }} />
                   ) : (
-                    team1.name[0]
+                    (team1.name || '?')[0]
                   )}
                 </div>
                 <span className="team__name" title={team1.name}>{team1.name}</span>
@@ -45,7 +45,7 @@ export const Match: React.FC<MatchProps> = memo(({ match, matchIndex, isLastRoun
                   {team2.logo ? (
                     <img src={team2.logo} alt={team2.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }} />
                   ) : (
-                    team2.name[0]
+                    (team2.name || '?')[0]
                   )}
                 </div>
                 <span className="team__name" title={team2.name}>{team2.name}</span>

@@ -55,12 +55,61 @@ async function fetchTeam(teamId: string | null): Promise<Team> {
   }
 }
 
-// Transform API matches to app matches (async to fetch team data)
+function scoreFromApi(value: number | null | undefined): number {
+  return value ?? 0;
+}
+
+function buildTeamFromEmbedded(
+  apiMatch: ApiBracketMatch,
+  slot: 1 | 2,
+): Team {
+  const id = slot === 1 ? apiMatch.participant1_id : apiMatch.participant2_id;
+  const name = slot === 1 ? apiMatch.participant1_name : apiMatch.participant2_name;
+  const logo = slot === 1 ? apiMatch.participant1_logo : apiMatch.participant2_logo;
+  const score = slot === 1 ? scoreFromApi(apiMatch.participant1_score) : scoreFromApi(apiMatch.participant2_score);
+  const resolvedName = name?.trim() || 'TBD';
+  const isWinner =
+    apiMatch.winner_id != null && id != null && apiMatch.winner_id === id;
+
+  return {
+    id: id ?? resolvedName,
+    name: resolvedName,
+    score,
+    isWinner,
+    logo: logo?.trim() ? logo : '',
+  };
+}
+
+async function resolveTeam(
+  apiMatch: ApiBracketMatch,
+  slot: 1 | 2,
+): Promise<Team> {
+  const id = slot === 1 ? apiMatch.participant1_id : apiMatch.participant2_id;
+  const embeddedName = slot === 1 ? apiMatch.participant1_name : apiMatch.participant2_name;
+  const embeddedLogo = slot === 1 ? apiMatch.participant1_logo : apiMatch.participant2_logo;
+  const score = slot === 1 ? scoreFromApi(apiMatch.participant1_score) : scoreFromApi(apiMatch.participant2_score);
+  const isWinner =
+    apiMatch.winner_id != null && id != null && apiMatch.winner_id === id;
+
+  if (embeddedName != null && embeddedName.trim() !== '') {
+    return buildTeamFromEmbedded(apiMatch, slot);
+  }
+
+  const fetched = await fetchTeam(id);
+  return {
+    ...fetched,
+    score,
+    isWinner,
+    logo: embeddedLogo?.trim() ? embeddedLogo! : fetched.logo,
+  };
+}
+
+// Transform API matches to app matches (async to fetch team data when names are not embedded)
 async function transformMatches(matches: ApiBracketMatch[]): Promise<Match[]> {
   const matchPromises = matches.map(async (apiMatch) => {
     const [team1, team2] = await Promise.all([
-      fetchTeam(apiMatch.participant1_id),
-      fetchTeam(apiMatch.participant2_id),
+      resolveTeam(apiMatch, 1),
+      resolveTeam(apiMatch, 2),
     ]);
 
     return {
@@ -95,8 +144,12 @@ async function groupMatchesByRound(matches: ApiBracketMatch[], isFinalsRound: bo
     // Get best_of from first match in round (assuming all matches in a round have same best_of)
     const bestOf = extractBestOf(roundMatches[0].best_of);
     
-    // Get round name from first match
-    const roundName = roundMatches[0].round_name || `Round ${roundNumber}`;
+    // Get round name from first match (API may put label in extra_data when round_name is null)
+    const first = roundMatches[0];
+    const roundName =
+      first.round_name?.trim() ||
+      first.extra_data?.round_name ||
+      `Round ${roundNumber}`;
     
     // Check if this is a finals round (either from bracket_type or isFinalsRound flag)
     const isFinals = isFinalsRound || roundMatches[0].bracket_type === 'final';

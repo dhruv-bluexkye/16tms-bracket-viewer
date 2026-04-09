@@ -1,21 +1,33 @@
 export interface ApiBracketMatch {
   round: number;
   match_number: number;
-  league_round_id: string;
-  round_name: string;
-  round_description: string | null;
-  round_team_count: number | null;
-  round_matches_per_group: number | null;
-  round_start: string | null;
-  round_end: string | null;
-  round_type: string | null;
+  /** Legacy shape */
+  league_round_id?: string;
+  /** Current API shape */
+  tournament_round_id?: string;
+  round_name: string | null;
+  round_description?: string | null;
+  round_team_count?: number | null;
+  round_matches_per_group?: number | null;
+  round_start?: string | null;
+  round_end?: string | null;
+  round_type?: string | null;
   group_id: string | null;
   participant1_id: string | null;
   participant2_id: string | null;
+  participant1_name?: string | null;
+  participant2_name?: string | null;
+  participant1_logo?: string | null;
+  participant2_logo?: string | null;
+  participant1_score?: number | null;
+  participant2_score?: number | null;
+  winner_id?: string | null;
+  winner_name?: string | null;
+  winner_logo?: string | null;
   next_match_if_win: number;
   next_match_if_loss: number;
   bracket_type: 'upper' | 'lower' | 'final';
-  match_type: string;
+  match_type?: string;
   best_of: string;
   extra_data: {
     round: number;
