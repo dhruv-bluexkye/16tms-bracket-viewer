@@ -1,8 +1,9 @@
 import React, { useMemo, memo, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
+import { ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import type { BracketSection } from '../data/mockData';
 import { Match } from './Match';
-import { useDragScroll } from '../hooks/useDragScroll';
 import { fetchBracketData } from '../services/api';
 import { transformUpperBracket, transformLowerBracket, transformFinalsBracket, transformSingleEliminationBracket } from '../utils/transformBracket';
 import '../styles/bracket.scss';
@@ -133,7 +134,6 @@ export const BracketViewer: React.FC = () => {
   console.log('BracketViewer component rendering');
   const { leagueId } = useParams<{ leagueId: string }>();
   console.log('BracketViewer - leagueId from params:', leagueId);
-  const containerRef = useDragScroll();
   const [upperBracket, setUpperBracket] = useState<BracketSection | null>(null);
   const [lowerBracket, setLowerBracket] = useState<BracketSection | null>(null);
   const [finalsBracket, setFinalsBracket] = useState<BracketSection | null>(null);
@@ -202,7 +202,7 @@ export const BracketViewer: React.FC = () => {
   if (loading) {
     const apiUrl = `/api/v1/tournaments/${leagueId}/bracket`;
     return (
-      <div className="bracket-container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', gap: '10px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', width: '100%', gap: '10px', background: 'var(--bg-color)' }}>
         <div style={{ color: 'var(--text-primary)' }}>Loading bracket...</div>
         <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>Fetching: {apiUrl}</div>
         <div className="loading-spinner" style={{
@@ -225,7 +225,7 @@ export const BracketViewer: React.FC = () => {
 
   if (error) {
     return (
-      <div className="bracket-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', width: '100%', background: 'var(--bg-color)' }}>
         <div style={{ color: '#ff4444' }}>Error: {error}</div>
       </div>
     );
@@ -233,29 +233,63 @@ export const BracketViewer: React.FC = () => {
 
   if (!upperBracket && !lowerBracket && !finalsBracket && !singleElimBracket) {
     return (
-      <div className="bracket-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', width: '100%', background: 'var(--bg-color)' }}>
         <div style={{ color: 'var(--text-primary)' }}>No bracket data available</div>
       </div>
     );
   }
 
   return (
-    <div ref={containerRef} className="bracket-container">
-      {/* Single Elimination - Show combined bracket */}
-      {formatType === 'single_elim' && singleElimBracket && (
-        <Section section={singleElimBracket} layoutType="binary" />
-      )}
+    <TransformWrapper
+      initialScale={1}
+      minScale={0.3}
+      maxScale={2}
+      centerOnInit
+      limitToBounds={false}
+      doubleClick={{ disabled: true }} // Handle manually for custom behavior if needed, or leave enabled
+      panning={{ velocityDisabled: false }}
+    >
+      {({ zoomIn, zoomOut, resetTransform }) => (
+        <div className="scroll-shell" onDoubleClick={() => resetTransform()}>
+          {/* Floating Controls */}
+          <div className="bracket-controls">
+            <button onClick={() => zoomIn()} title="Zoom In"><ZoomIn /></button>
+            <button onClick={() => zoomOut()} title="Zoom Out"><ZoomOut /></button>
+            <button onClick={() => resetTransform()} title="Reset View"><RotateCcw /></button>
+          </div>
 
-      {/* Double Elimination - Show separate sections */}
-      {formatType !== 'single_elim' && (
-        <>
-          {/* Upper Bracket using Binary Tree Layout (includes finals) */}
-          {upperBracket && <Section section={upperBracket} layoutType="binary" />}
+          {/* Zoomable Area */}
+          <TransformComponent
+            wrapperStyle={{ width: "100%", height: "100%", overflow: "hidden" }}
+            contentStyle={{ 
+              width: "max-content", 
+              height: "max-content", 
+              display: "flex", 
+              flexDirection: "column",
+              minWidth: "100%",
+              minHeight: "100%"
+            }}
+          >
+            <div className="bracket-container">
+              {/* Single Elimination - Show combined bracket */}
+              {formatType === 'single_elim' && singleElimBracket && (
+                <Section section={singleElimBracket} layoutType="binary" />
+              )}
 
-          {/* Lower Bracket using Linear Layout (stacking) */}
-          {lowerBracket && <Section section={lowerBracket} layoutType="linear" />}
-        </>
+              {/* Double Elimination - Show separate sections */}
+              {formatType !== 'single_elim' && (
+                <>
+                  {/* Upper Bracket using Binary Tree Layout (includes finals) */}
+                  {upperBracket && <Section section={upperBracket} layoutType="binary" />}
+
+                  {/* Lower Bracket using Linear Layout (stacking) */}
+                  {lowerBracket && <Section section={lowerBracket} layoutType="linear" />}
+                </>
+              )}
+            </div>
+          </TransformComponent>
+        </div>
       )}
-    </div>
+    </TransformWrapper>
   );
 };
