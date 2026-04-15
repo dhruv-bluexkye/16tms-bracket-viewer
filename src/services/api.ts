@@ -26,7 +26,7 @@ export interface ApiBracketMatch {
   winner_logo?: string | null;
   next_match_if_win: number;
   next_match_if_loss: number;
-  bracket_type: 'upper' | 'lower' | 'final';
+  bracket_type: 'upper' | 'lower' | 'final' | 'finals';
   match_type?: string;
   best_of: string;
   extra_data: {

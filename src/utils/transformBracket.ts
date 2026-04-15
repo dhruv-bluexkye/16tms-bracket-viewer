@@ -152,7 +152,9 @@ async function groupMatchesByRound(matches: ApiBracketMatch[], isFinalsRound: bo
       `Round ${roundNumber}`;
     
     // Check if this is a finals round (either from bracket_type or isFinalsRound flag)
-    const isFinals = isFinalsRound || roundMatches[0].bracket_type === 'final';
+    const bt = roundMatches[0].bracket_type;
+    const isFinals =
+      isFinalsRound || bt === 'final' || bt === 'finals';
 
     const transformedMatches = await transformMatches(roundMatches);
 
@@ -167,6 +169,16 @@ async function groupMatchesByRound(matches: ApiBracketMatch[], isFinalsRound: bo
 
   const resolvedRounds = await Promise.all(roundPromises);
   return resolvedRounds.sort((a, b) => a.id - b.id);
+}
+
+/** Order columns left-to-right: main bracket rounds first, then finals (API often reuses round numbers like 1 for Grand Final). */
+function sortCombinedBracketRounds(rounds: Round[]): Round[] {
+  return [...rounds].sort((a, b) => {
+    const tierA = a.isFinals ? 1 : 0;
+    const tierB = b.isFinals ? 1 : 0;
+    if (tierA !== tierB) return tierA - tierB;
+    return a.id - b.id;
+  });
 }
 
 // Transform API response to BracketSection for upper bracket (includes finals)
@@ -185,9 +197,9 @@ export async function transformUpperBracket(apiResponse: ApiBracketResponse): Pr
   const upperRounds = await groupMatchesByRound(upperMatches, false);
   const finalsRounds = await groupMatchesByRound(finalsMatches, true);
   
-  // Combine rounds, ensuring finals come after upper
-  const allRounds = [...upperRounds, ...finalsRounds].sort((a, b) => a.id - b.id);
-  
+  // Combine rounds, ensuring finals come after upper (do not sort by id alone — finals often reuse round 1)
+  const allRounds = sortCombinedBracketRounds([...upperRounds, ...finalsRounds]);
+
   return {
     title: 'Upper Bracket',
     rounds: allRounds,
@@ -238,9 +250,9 @@ export async function transformSingleEliminationBracket(apiResponse: ApiBracketR
   const upperRounds = await groupMatchesByRound(upperMatches, false);
   const finalsRounds = await groupMatchesByRound(finalsMatches, true);
   
-  // Combine rounds, ensuring finals come after upper
-  const allRounds = [...upperRounds, ...finalsRounds].sort((a, b) => a.id - b.id);
-  
+  // Combine rounds, ensuring finals come after upper (do not sort by id alone — finals often reuse round 1)
+  const allRounds = sortCombinedBracketRounds([...upperRounds, ...finalsRounds]);
+
   return {
     title: 'Upper Bracket',
     rounds: allRounds,
